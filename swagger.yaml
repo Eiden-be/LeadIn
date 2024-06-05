@@ -1,0 +1,3111 @@
+---
+openapi: 3.0.1
+info:
+  title: LeadIn API
+  description: "<p>This page concerns the exploitation of a SSRF vulnerability in the API of LeadIn Younited Credit.<br />It is designed to give complete information
+    about the API endpoints, integration flow and describe edge cases that will help
+    our partners' integration.</p>\r\n\r\n# Introduction\r\n\r\nThis API is designed
+    to help our partners propose Younited products to their clients 100% **in the
+    system of the partner**.\r\n\r\nIt is available in **France**, **Italy**, **Spain**,
+    **Portugal** and **Germany**.\r\n You will find country features available to
+    all countries:\r\n\r\n- <a href=\"#tag/Credit-application/paths/~1api~1v1~1credit-application~1pre-evaluation/post\">Pre-evaluation
+    – Pre-evaluate route</a>\r\n- <a href=\"#tag/Credit-application/paths/~1api~1v1~1credit-application~1integration/post\">Contract
+    creation – Integrate route</a>\r\n- <a href=\"#tag/Credit-application/paths/~1api~1v1~1credit-application~1{referenceOrRequestId}~1documents/post\">Documents
+    upload – Documents post route</a>\r\n- <a href=\"#tag/Credit-application/paths/~1api~1v1~1credit-application~1{referenceOrRequestId}~1status/get\">Status
+    updates – GetStatus route</a>\r\n\r\n## Applying for a credit at Younited\r\n\r\n![CreditApplicationProcess](/creditApplicationProcess.png)\r\n\r\n##
+    How we work with our partners\r\n\r\n<h3>Pre-fill route</h3>\r\nWhen a partner
+    cannot send all the information needed by Younited:\r\n\r\n- The **partner** sends
+    all available information\r\n- **Younited** answers with the pre-filled funnel
+    URL, and if enough information was sent, Younited performs an evaluation check
+    to pre-filter applications\r\n\r\n<h3>Pre-evaluate route</h3>\r\nWhen a partner
+    has all the necessary information but just wants to know if the prospect is eligible
+    with Younited and at which conditions:\r\n\r\n- The **partner** sends all information
+    needed for evaluation\r\n- **Younited** answers with the eligibility and the conditions\r\n
+    \     \r\nIt's also possible to add a bank reader automatic check\r\n\r\n<h3>Integration
+    route</h3>\r\nWhen a partner has all the necessary information and wish to send
+    the lead to Younited:\r\n\r\n- The **partner** sends all the information needed
+    for evaluation and integration\r\n- **Younited** answers with the pre-acceptation
+    status, the conditions and estimations of operational dates (estimated decision
+    date, estimated fund transfer date, « real » instalment at 1st debit)\r\n\r\nAfter
+    the pre-acceptation, the integration can continue.\r\n\r\n<h3>Status route</h3>\r\nWhen
+    a partner wants to know the status of a lead they generated: \r\n\r\n- The **partner**
+    sends the contract reference\r\n- **Younited** answers with the general status
+    of the lead and the status of each required document category\r\n\r\n<h3>Documents
+    route</h3>\r\nWhen a partner collects the application documents and needs to transfer
+    them to Younited: \r\n\r\n- The **partner** sends the document for a specified
+    category \r\n- **Younited** only confirms whether the documents were well received
+    or not. To get the lead's status after this document transfer, the partner must
+    call the **Status** route\r\n\r\n## Auto-Granting\r\n### *(Available only in Spain)*\r\n
+    \   \r\nWe're able to propose an instant decision to our partners through Leadin
+    API.\r\n\r\nThe partner's implementation would be very close to the classic flow.
+    \r\n\r\nYou can find below all the requirements :\r\n\r\n**1/ The partner must
+    send the financial information through the integration route :**\r\n\r\n- The
+    financial information must be consistent (the titular of the account must match
+    with the person who is asking for the loan, enough transactions to perform solvency
+    analysis on it etc)\r\n- If the bank reader is inconsistent, we'll indicate this
+    information in the integration route response :\r\n    - the prospect will be
+    pre rejected ❌\r\n    - the partner should recall the integrate route with different
+    financial information (example another account used during the bank reader connection)
+    \U0001F504\r\n    \r\n    Or\r\n    \r\n    - The partner should do a new request
+    without financial information :\r\n        - In this case the credit application
+    will be managed with the manual mode (exit of the auto-granting mode ➡️)\r\n-
+    if the bank reader is consistent and the evaluation is Ok , the prospect will
+    be pre accepted ✅ the partner has to perform the 2/ step below\r\n\r\n**2/ The
+    partner must to call the get status route and then send us the personal documents
+    (id) through the uplaod documents route :** \r\n\r\n⚠️The partner won't receive
+    the completion user space in the integration route response and must use his interface
+    for uploading documents.\r\n\r\nThe document will be automatically analyzed by
+    our verification APIs.\r\n\r\n⚠️ The status of the documents is not retrieved
+    in the response of this route (see 3/)\r\n\r\n**3/ The partner must call the Get
+    Status route (after the call to the upload documents route) :**\r\n\r\n- If the
+    status of the credit application is uncompleted, the partner has to upload again
+    a new document according to the rejection reason which is indicated into the gest
+    status response \U0001F504\r\n- If the status of the credit application is completed
+    ;\r\n    - Our automatic auto-granting evaluation workflow is applied :\r\n        -
+    if the he status of the credit application is rejected ❌ the workflow stop at
+    this step\r\n        - if the status of the credit application is \"GrantedButAwaitingFraudAndComplianceVerification\"
+    ✅, the partner must retrieve the signature link in the get status route and redirect
+    the prospect to it  (step 4/)\r\n\r\n**4/** **The partner must redirect the prospect
+    to our signature space using the signature link (4/)**\r\n\r\n**5/ The partner
+    must call the Get Status route on a regular frequency** \r\n\r\n- If the prospect
+    sign and all the verifications are done on our side, the status of the credit
+    application become \"GrantedAndSentToFinance\"\r\n- We recommend 2 calls per day
+    (every 12 hours) to retrieve the final status of the credit application (rejected
+    or granted)\r\n## Environments\r\n\r\nYounited Credit offers two environments:\r\n\r\n-
+    Test/Pre-production: [https://leadin.pp-services.younited-credit.com](https://leadin.pp-services.younited-credit.com)\r\n-
+    Live/Production: [https://leadin.services.younited-credit.com](https://leadin.services.younited-credit.com)\r\n\r\nCredentials
+    provided are different on each environment.\r\nPlease reach out to your Partner
+    Manager to inquire about credentials.\r\n\r\n<p>Please find below all sandbox
+    credentials for each available country:</p><ul>\r\n                                         <li>
+    <b>France</b>:\r\n                                            <ul>\r\n                                                <li>client_id:
+    <code>6e720fa3-6f46-472f-aaa6-ad9df45ffd40</code></li>\r\n                                                <li>client_secret:
+    <code>XaqI2UAd-fxZ57t3__9~FhD6zf5a0iuU1j</code></li>\r\n                                            </ul>\r\n
+    \                                        </li>\r\n                                        </ul><ul>\r\n
+    \                                        <li> <b>Italy</b>:\r\n                                            <ul>\r\n
+    \                                               <li>client_id: <code>ee0a87a6-9030-4eed-b826-4e97ad574ea4</code></li>\r\n
+    \                                               <li>client_secret: <code>0~Jny~SCGyrS67O.-wdMccC1f.KU0zyeN1</code></li>\r\n
+    \                                           </ul>\r\n                                         </li>\r\n
+    \                                       </ul><ul>\r\n                                         <li>
+    <b>Spain</b>:\r\n                                            <ul>\r\n                                                <li>client_id:
+    <code>f19afcfe-e14b-4982-9b55-0771c4faa990</code></li>\r\n                                                <li>client_secret:
+    <code>2.vmlX~wn_5y5xr4uq2u0G1PdSclHeRg~K</code></li>\r\n                                            </ul>\r\n
+    \                                        </li>\r\n                                        </ul><ul>\r\n
+    \                                        <li> <b>Portugal</b>:\r\n                                            <ul>\r\n
+    \                                               <li>client_id: <code>b3f2f3a1-7b49-43a7-b0cf-22c210662d7b</code></li>\r\n
+    \                                               <li>client_secret: <code>EfC~vCH0_.93rGKtj_3ko.2x-EMkysKnXD</code></li>\r\n
+    \                                           </ul>\r\n                                         </li>\r\n
+    \                                       </ul><ul>\r\n                                         <li>
+    <b>Germany</b>:\r\n                                            <ul>\r\n                                                <li>client_id:
+    <code>b75bcbed-c4b2-4b7f-baca-88387832e80a</code></li>\r\n                                                <li>client_secret:
+    <code>mPFf3tm5X2u~~k8~9kb40uQZ9W9u4.UBs-</code></li>\r\n                                            </ul>\r\n
+    \                                        </li>\r\n                                        </ul>"
+  version: v1
+  x-logo:
+    url: "/ycredit.svg"
+    altText: Younited Credit
+paths:
+  "/oauth2/token":
+    post:
+      tags:
+      - OAuth
+      summary: Generates a JWT Bearer token.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              required:
+              - client_id
+              - client_secret
+              type: object
+              properties:
+                client_id:
+                  type: string
+                  description: Provided Client Id. If you do not have this, please
+                    contact us.
+                client_secret:
+                  type: string
+                  description: Provided Client Secret. If you do not have this, please
+                    contact us.
+            encoding:
+              client_id:
+                style: form
+              client_secret:
+                style: form
+      responses:
+        '200':
+          description: OK - Bearer token generated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Api.Models.Authentication.AcquireTokenResponse"
+        '400':
+          description: Bad Request - Unauthorized client
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '500':
+          description: Internal Server Error
+  "/api/v1/credit-application/funnel":
+    post:
+      tags:
+      - Credit application
+      summary: Initializes a pre-filled funnel.
+      description: "This route is recommended for partners who are not able to provide
+        all the information required for a direct **integration**, letting the applicant
+        fill in the missing information in the Younited Credit funnel.\r\n            <br
+        /><br />Returns the URL to a Younited Credit credit application funnel (unless
+        the application is rejected, in which case no URL will be returned).\r\n            The
+        returned URL leads to a funnel with the transmitted values already set, so
+        that the applicant doesn't need to fill them again, while still being able
+        to modify them. The URL is only valid for 90 minutes after being returned
+        by the API."
+      requestBody:
+        description: The credit application details.
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.CreditApplicationRequest"
+            examples:
+              ES - Spanish application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: ADMINISTRATIVE
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Javier
+                      lastName: Alonso
+                      genderCode: MALE
+                      nationalityCode: ES
+                      dateOfBirth: '1951-01-01'
+                      fiscalCode: 47945578P
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '0075'
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '11'
+                    streetName: Benito Guinea
+                    streetTypeCode: CL
+                    postalCode: '08292'
+                    city: Esparreguera
+                    countryCode: ES
+                    cellPhoneNumber: '601000000'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              FR - French application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PRIVATE_SECTOR
+                      professionCode: ENGINEER
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Jean
+                      lastName: Dupont
+                      genderCode: MALE
+                      nationalityCode: FR
+                      dateOfBirth: '1951-01-01'
+                      cityOfBirth: Paris
+                      frenchDepartmentOfBirthCode: FR-75
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: BNP_PARIBAS
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '15'
+                    streetName: rue de la Boétie
+                    postalCode: '78300'
+                    city: Poissy
+                    countryCode: FR
+                    cellPhoneNumber: '0601020304'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              IT - Italian application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PRIVATE_SECTOR
+                      professionCode: EMPLOYEE
+                      professionalSituationStartDate: 2011-06
+                      companyTypeCode: SRL_LESS_50
+                    personalInformation:
+                      firstName: Donatelli
+                      lastName: Mawrzio
+                      nationalityCode: IT
+                      fiscalCode: MWRDTL80T15H501N
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '1005'
+                    bankAccountOpeningDate: '1998'
+                    iban: IT60X0542811101000000123456
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '15'
+                    streetName: Via Margutta
+                    postalCode: '00135'
+                    countryCode: IT
+                    cellPhoneNumber: '601000000'
+                    italianProvinceCode: RM
+                    italianCommuneCode: H501
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+      responses:
+        '200':
+          description: OK - Credit application submitted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.CreditApplicationResponse"
+        '400':
+          description: Bad Request - The submitted credit application has invalid
+            values
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '401':
+          description: Unauthorized - Invalid authentication token provided
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '500':
+          description: Internal Server Error
+  "/api/v1/credit-application/pre-evaluation":
+    post:
+      tags:
+      - Credit application
+      summary: Pre-evaluates a credit application.
+      description: "This route works like the **integration** route, but with fewer
+        required fields, and without actually integrating the application information
+        on the Younited Credit side.\r\n            The pre-evaluation process is
+        optional and is provided as a way indicate to partners whether the application
+        will get pre-approved or not. However, it is not a final verdict, and the
+        pre-approval decision might differ during integration."
+      requestBody:
+        description: The credit application details.
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.CreditApplicationRequest"
+            examples:
+              DE - German application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: PUBLICWORKER
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Manfred
+                      lastName: Von Karma
+                      genderCode: MALE
+                      nationalityCode: DE
+                      dateOfBirth: '1951-01-01'
+                      cityOfBirth: Berlin
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: BNP_PARIBAS
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '46'
+                    streetName: Pasewalker Straße
+                    postalCode: '73667'
+                    city: Kaisersbach
+                    countryCode: DE
+                    cellPhoneNumber: '01603020402'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              ES - Spanish application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: ADMINISTRATIVE
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Javier
+                      lastName: Alonso
+                      genderCode: MALE
+                      nationalityCode: ES
+                      dateOfBirth: '1951-01-01'
+                      fiscalCode: 47945578P
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '0075'
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '11'
+                    streetName: Benito Guinea
+                    streetTypeCode: CL
+                    postalCode: '08292'
+                    city: Esparreguera
+                    countryCode: ES
+                    cellPhoneNumber: '601000000'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              FR - French application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PRIVATE_SECTOR
+                      professionCode: ENGINEER
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Jean
+                      lastName: Dupont
+                      genderCode: MALE
+                      nationalityCode: FR
+                      dateOfBirth: '1951-01-01'
+                      cityOfBirth: Paris
+                      frenchDepartmentOfBirthCode: FR-75
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: BNP_PARIBAS
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '15'
+                    streetName: rue de la Boétie
+                    postalCode: '78300'
+                    city: Poissy
+                    countryCode: FR
+                    cellPhoneNumber: '0601020304'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              IT - Italian application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PRIVATE_SECTOR
+                      professionCode: EMPLOYEE
+                      professionalSituationStartDate: 2011-06
+                      companyTypeCode: SRL_LESS_50
+                    personalInformation:
+                      firstName: Donatelli
+                      lastName: Mawrzio
+                      nationalityCode: IT
+                      fiscalCode: MWRDTL80T15H501N
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '1005'
+                    bankAccountOpeningDate: '1998'
+                    iban: IT60X0542811101000000123456
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '15'
+                    streetName: Via Margutta
+                    postalCode: '00135'
+                    countryCode: IT
+                    cellPhoneNumber: '601000000'
+                    italianProvinceCode: RM
+                    italianCommuneCode: H501
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              PT - Portuguese application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: ADMINISTRATIVE
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Maria
+                      lastName: Lamas
+                      genderCode: FEMALE
+                      nationalityCode: PT
+                      dateOfBirth: '1951-01-01'
+                      fiscalCode: '136695973'
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '0007'
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '87'
+                    streetName: Rua Diogo Cão
+                    postalCode: 2775-633
+                    city: Carcavelos
+                    countryCode: PT
+                    cellPhoneNumber: '601000000'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+      responses:
+        '200':
+          description: OK - Credit application submitted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.CreditApplicationResponse"
+        '400':
+          description: Bad Request - The submitted credit application has invalid
+            values
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '401':
+          description: Unauthorized - Invalid authentication token provided
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '500':
+          description: Internal Server Error
+      preResponseAdditionalContent: "<p>Younited can send 4 types of answer in the
+        API : \r\n<ul>\r\n<li> 1. Prospect is eligible for the initial offer requested</li>\r\n<li>2.
+        Prospect is not eligible for the initial offer requested</li>\r\n<li>3. Error</li>\r\n<li>4.
+        Invalid request</li>\r\n</ul>\r\n</p>"
+      postResponseAdditionalContent: "<h3>Alternative offers</h3>\r\n\r\n<p>For responses
+        1. and 2., Younited can also answer some \"Alternative Offers\" : these are
+        offers different from the one requested by the client (for example, different
+        borrowed amount or different credit maturities) for which the client would
+        be eligible.</p>\r\n\r\n<h3>Automatic decision based on bank aggregation information</h3>\r\n\r\n<p>For
+        partners in <b>Spain</b>, you can send bank aggregation information (FinancialInformation)
+        for automatic decision in the pre-evaluate Route. <br />  \r\nIf the bank
+        aggregated information is incomplete the application will be rejected. </p>\r\n\r\n<p>In
+        France, Italy and Germany there is no automatic decision based on Bank aggregated
+        data yet (coming soon).</p>\r\n\r\n<h3>Missing data </h3>\r\n\r\n<p>If one
+        of the mandatory fields is not available, avoid filling it with a standardized
+        value that might impair risk evaluation results. Please contact us in case
+        of problem or doubt so that we can see internally if we can find a solution.</p>"
+  "/api/v1/credit-application/integration":
+    post:
+      tags:
+      - Credit application
+      summary: Integrates a credit application.
+      description: "The goal of the integration route is to process a credit application,
+        much like an offer selection at the end of the Younited funnel.<br />\r\n
+        \           The integration call will save the prospect's application in Younited's
+        system.<br /><br />\r\n            Generally the pre-evaluation eligibility
+        result and the integration pre-acceptation result should be similar, but some
+        differences may happen if:\r\n            <ul><li>The partner didn't send
+        all the data in the pre-evaluation call: the additional mandatory data for
+        the integration call can trigger specific rules.</li><li>Specific situations
+        are appearing after the entire decision process: some third party calls are
+        deactivated during the pre-evaluation.</li></ul>"
+      requestBody:
+        description: The credit application details.
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.CreditApplicationRequest"
+            examples:
+              DE - German application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: PUBLICWORKER
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Manfred
+                      lastName: Von Karma
+                      genderCode: MALE
+                      nationalityCode: DE
+                      dateOfBirth: '1951-01-01'
+                      cityOfBirth: Berlin
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: BNP_PARIBAS
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '46'
+                    streetName: Pasewalker Straße
+                    postalCode: '73667'
+                    city: Kaisersbach
+                    countryCode: DE
+                    cellPhoneNumber: '01603020402'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              ES - Spanish application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: ADMINISTRATIVE
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Javier
+                      lastName: Alonso
+                      genderCode: MALE
+                      nationalityCode: ES
+                      dateOfBirth: '1951-01-01'
+                      fiscalCode: 47945578P
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '0075'
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '11'
+                    streetName: Benito Guinea
+                    streetTypeCode: CL
+                    postalCode: '08292'
+                    city: Esparreguera
+                    countryCode: ES
+                    cellPhoneNumber: '601000000'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              FR - French application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PRIVATE_SECTOR
+                      professionCode: ENGINEER
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Jean
+                      lastName: Dupont
+                      genderCode: MALE
+                      nationalityCode: FR
+                      dateOfBirth: '1951-01-01'
+                      cityOfBirth: Paris
+                      frenchDepartmentOfBirthCode: FR-75
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: BNP_PARIBAS
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '15'
+                    streetName: rue de la Boétie
+                    postalCode: '78300'
+                    city: Poissy
+                    countryCode: FR
+                    cellPhoneNumber: '0601020304'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              IT - Italian application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PRIVATE_SECTOR
+                      professionCode: EMPLOYEE
+                      professionalSituationStartDate: 2011-06
+                      companyTypeCode: SRL_LESS_50
+                    personalInformation:
+                      firstName: Donatelli
+                      lastName: Mawrzio
+                      nationalityCode: IT
+                      fiscalCode: MWRDTL80T15H501N
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '1005'
+                    bankAccountOpeningDate: '1998'
+                    iban: IT60X0542811101000000123456
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '15'
+                    streetName: Via Margutta
+                    postalCode: '00135'
+                    countryCode: IT
+                    cellPhoneNumber: '601000000'
+                    italianProvinceCode: RM
+                    italianCommuneCode: H501
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+              PT - Portuguese application:
+                value:
+                  projectInformation:
+                    projectTypeCode: USEDCAR
+                    requestedAmount: 1000
+                    currencyCode: EUR
+                    creditMaturity: 24
+                  maritalSituation:
+                    maritalStatusCode: SINGLE
+                    numberOfChildren: 0
+                  housingSituation:
+                    housingStatusCode: TENANT
+                    housingStatusStartDate: 2012-02
+                  borrowerInformation:
+                    employmentSituation:
+                      professionalSituationCode: PERMANENT
+                      sectorCode: PUBLIC_SECTOR
+                      professionCode: ADMINISTRATIVE
+                      professionalSituationStartDate: 2011-06
+                    personalInformation:
+                      firstName: Maria
+                      lastName: Lamas
+                      genderCode: FEMALE
+                      nationalityCode: PT
+                      dateOfBirth: '1951-01-01'
+                      fiscalCode: '136695973'
+                  incomeAndExpenses:
+                    netMonthlyIncome: 2200
+                    numberOfSalariesPerYear: 12
+                    rentAmount: 400
+                    hasLatePayments: false
+                    ongoingCredits:
+                    - monthlyInstallmentAmount: 200
+                      ongoingCreditTypeCode: OTHER
+                  bankInformation:
+                    bankCode: '0007'
+                    bankAccountOpeningDate: '1998'
+                  contactInformation:
+                    email: test@example.com
+                    streetNumber: '87'
+                    streetName: Rua Diogo Cão
+                    postalCode: 2775-633
+                    city: Carcavelos
+                    countryCode: PT
+                    cellPhoneNumber: '601000000'
+                  optinInformation:
+                    acceptTermsAndConditions: true
+                    agreeToReceiveNewsFromYounitedCredit: true
+                    agreeToReceivePromotionalMaterialFromPartners: true
+      responses:
+        '200':
+          description: OK - Credit application submitted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.CreditApplicationResponse"
+        '400':
+          description: Bad Request - The submitted credit application has invalid
+            values
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '401':
+          description: Unauthorized - Invalid authentication token provided
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '500':
+          description: Internal Server Error
+      postResponseAdditionalContent: "<h3>Alternative offers</h3>\r\n\r\n<p>There
+        are no alternative offers in an Integrate call. To get this information, the
+        partner must do a Pre-evaluate call and then an Integrate with the offer chosen
+        by the client.</p>\r\n\r\n<h3>Automatic decision based on bank aggregation
+        information</h3>\r\n\r\n<p>Like in the Pre-evaluate Route there is no automatic
+        decision at this stage in Germany, France and Italy. The partner can share
+        bank aggregation information that will be transmitted to the CRM for analysis,
+        but it will not be automatically analysed. This should evolve current 2021.</p>\r\n\r\n<p>For
+        partners in <b>Spain</b>, you can send bank aggregation information (FinancialInformation)
+        for automatic decision in the Integrate Route just as in the pre-evaluate
+        route.</p>\r\n\r\n<p>If all the mandatory fields of the data are not populated,
+        the application will be rejected.</p>"
+  "/api/v1/credit-application/{referenceOrRequestId}/documents":
+    post:
+      tags:
+      - Credit application
+      summary: Uploads requested documents for a non-anonymized credit.
+      description: "<h3>Overview</h3>\r\n<p>Allows sending requested documents for
+        a given credit application. To know which documents are requested, first call
+        the <a href=\"tag/Credit-application/paths/~1api~1v1~1credit-application~1{referenceOrRequestId}~1status/get\">status
+        route.</a></p>\r\n<h3>Format of the information</h3>\r\n<p>The partner must
+        send a POST request with the contract reference on which he wants to know
+        the mandatory documents. In addition, document uploads are only allowed for
+        those 3 granting statuses: OpcEdited, ToBeReviewed, Incomplete.</p>\r\n<p>The
+        mapping of the documents can be found in the excel file “Document mapping”.
+        It displays all the documents that can be requested by Younited, the label
+        in our system.</p>\r\n<p>File size is limited to 4MB.</p>\r\n<p>The number
+        of documents must match the number of document categories put in the call.
+        To send several documents in a single category, the partner will have to put
+        several times the name of the category.</p>\r\n<p>\r\n  <b>Usage</b>: provide
+        DocumentId (retrieved from status route)</p>\r\n<p>\r\n  <b>Obsolete usage</b>:
+        provide CategoryCode + BorrowerTypeCode</p>"
+      parameters:
+      - name: referenceOrRequestId
+        in: path
+        description: "The reference or request id.\r\n            Providing the reference
+          is preferred. Only provide the request id if you don't have the reference.\r\n
+          \           Credit must be non-anonymized."
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - documents
+              type: object
+              properties:
+                documents:
+                  type: file
+                  description: 'Contains one or more files to upload. Each file should
+                    be represented by form data parameters ''documents[N].categoryCode''
+                    and ''documents[N].borrowerTypeCode''. Where N is a zero-based
+                    index of the file in ''documents'' field. The file should have
+                    one of the following media types: [image/png; image/jpeg; image/bmp;
+                    application/pdf]'
+                  format: binary
+                documents[0].documentId:
+                  type: int
+                  description: Represents the Id of the document. Can be retrieved
+                    using the Status route and sent instead of CategoryCode and BorrowerTypeCode
+                documents[0].categoryCode:
+                  type: string
+                  description: "(Obsolete) Represents a document category code. Where
+                    0 - is the file index (the first file in 'documents' form-data
+                    parameter)"
+                documents[0].borrowerTypeCode:
+                  type: string
+                  description: "(Obsolete) Represents a document borrower type code.
+                    Where 0 - is the file index the first file in 'documents' form-data
+                    parameter). Borrower type code has following values: [Borrower,
+                    CoBorrower, Home, None]"
+      responses:
+        '200':
+          description: OK - Requested documents uploaded
+        '400':
+          description: Bad Request - The submitted requested documents has invalid
+            values
+          content:
+            text/plain:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+            text/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '401':
+          description: Unauthorized - Invalid authentication token provided
+          content:
+            text/plain:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+            text/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '500':
+          description: Internal Server Error
+  "/api/v1/credit-application/{referenceOrRequestId}/status":
+    get:
+      tags:
+      - Credit application
+      summary: Gets the status of a given non-anonymized credit application.
+      description: "<h3>Overview</h3>\r\n<p>Returns summary information for the concerned
+        credit application, along with its current granting status and information
+        about the requested documents.</p>\r\n<h3>Information</h3>\r\n<p>Younited
+        will answer:\r\n            <ul><li>The status of the application</li><li>The
+        link for the <acronym title=\"Qualified Electronic Signature\">QES</acronym>
+        process if our internal granting team has invalidated / rejected the initial
+        credit agreement offer.</li><li>The list of mandatory documents for this specific
+        prospect</li><li>The completion status of each category</li></ul></p>\r\n<br
+        />The values for <b>status of application</b> are the following:\r\n            <table><th>Value</th><th>Description</th><tr><td>OpcEdited</td><td>The
+        application is pre-accepted and zero documents have been received</td></tr><tr><td>Incomplete</td><td>At
+        least one document has been already received but we still miss some documents</td></tr><tr><td>ToBeReviewed</td><td>All
+        documents have been received and Younited has to check their validity</td></tr><tr><td>Completed</td><td>All
+        documents have been received and Younited confirms their validity</td></tr><tr><td>GrantedButAwaitingSignature</td><td>The
+        application has been approved by Younited analysis team but we still miss
+        the signature of the credit contract</td></tr><tr><td>GrantedButAwaitingFraudAndComplianceVerification</td><td>The
+        application has been approved but we want to do some additional fraud checks</td></tr><tr><td>GrantedAndSentToFinance</td><td>The
+        application has been approved and sent to our Finance team for fund transfer</td></tr><tr><td>Rejected</td><td>The
+        application has been rejected by Younited analysis team</td></tr><tr><td>Cancelled</td><td>The
+        application has been cancelled. In case of a counter offer (upsell), the application
+        is cancelled, and the new contract reference is sent in the CounterOfferReference
+        field.</td></tr><tr><td>Obsolete</td><td>The application has been in Incomplete
+        for more than 45 days and the offer is now obsolete</td></tr></table>"
+      parameters:
+      - name: referenceOrRequestId
+        in: path
+        description: "The reference or request id.\r\n            Credit must be non-anonymized."
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: The request body.
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.CreditApplicationReferenceRequest"
+      responses:
+        '200':
+          description: OK - Credit application status retrieved
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Response.StatusInformation"
+        '400':
+          description: Bad Request - The reference or request id is invalid
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '401':
+          description: Unauthorized - Invalid authentication token provided
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '409':
+          description: May happen when the status information is not yet available
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '500':
+          description: Internal Server Error
+  "/api/v1/credit-application/{referenceOrRequestId}/credit-agreement-offer":
+    get:
+      tags:
+      - Credit application
+      summary: Gets the credit agreement offer of a given non-anonymized credit application.
+      description: Returns the credit agreement offer PDF file of the concerned credit
+        application.
+      parameters:
+      - name: referenceOrRequestId
+        in: path
+        description: "The reference or request id.\r\n            Providing the reference
+          is preferred. Only provide the request id if you don't have the reference.\r\n
+          \           Credit must be non-anonymized."
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: The request body.
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.CreditApplicationReferenceRequest"
+      responses:
+        '200':
+          description: OK - Credit agreement offer file retrieved
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad Request - The reference or request id is invalid
+          content:
+            application/pdf:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ValidationProblemDetails"
+        '401':
+          description: Unauthorized - Invalid authentication token provided
+          content:
+            application/pdf:
+              schema:
+                "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+        '500':
+          description: Internal Server Error
+  "/api/resources/banks":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the bank codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/borrowed-amounts":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the borrowed amount codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/company-types":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the company type codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/countries":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the country codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/credit-maturities":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the credit maturity codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/credit-institutions":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the credit institution codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/credit-institution-branches":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the credit institution branches codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/employment-situations":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets all the valid combinations for ProfessionalSituationCode, ProfessionCode
+        and SectorCode.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceProfessionalSituations"
+  "/api/resources/french-departments":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the French department codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/genders":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the gender codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/housing-status":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the housing status codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/insurances":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the insurance codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/italian-communes":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the Italian commune codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/french-communes":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the French commune codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/italian-provinces":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the Italian province codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/marital-status":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the marital status codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/ongoing-credit-types":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the ongoing credit type codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/paid-months":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the number of paid months codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/professions":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the profession codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/professional-situations":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the professional situation codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/project-types":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the project type codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/sectors":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the sector codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/street-types":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the street type codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+  "/api/resources/postal-codes":
+    get:
+      tags:
+      - Resource codes
+      summary: Gets the postal codes list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest"
+            examples:
+              No body:
+                value: ''
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceListDocumentation"
+components:
+  schemas:
+    Microsoft.AspNetCore.Mvc.ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+      additionalProperties: {}
+    Microsoft.AspNetCore.Mvc.ValidationProblemDetails:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+      additionalProperties: {}
+    Yuc.LeadIn.Api.Dto.Document.Request.RequestedDocumentContent:
+      type: object
+      properties:
+        documentId:
+          type: integer
+          format: int32
+        categoryCode:
+          type: string
+        borrowerTypeCode:
+          type: string
+        fileName:
+          type: string
+        mediaType:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.CreditApplicationRequest:
+      type: object
+      properties:
+        projectInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.ProjectInformation"
+        maritalSituation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.MaritalSituation"
+        housingSituation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.HousingSituation"
+        borrowerInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BorrowerInformation"
+        coBorrowerInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BorrowerInformation"
+        incomeAndExpenses:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.IncomeAndExpenses"
+        bankInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankInformation"
+        contactInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.ContactInformation"
+        optinInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.OptinInformation"
+        financialInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.FinancialInformation"
+        financialAggregation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinancialAggregation"
+        technicalConfiguration:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.TechnicalConfiguration"
+        testingConfiguration:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.TestingConfiguration"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankInformation:
+      type: object
+      properties:
+        bankCode:
+          type: string
+          description: 'A bank code listed in endpoint: /api/resources/banks'
+        bankAccountOpeningDate:
+          type: string
+          description: The bank account's opening date.
+        iban:
+          type: string
+          description: The International Bank Account Number.
+      additionalProperties: false
+      description: The applicant's bank information.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Cfts.CftsAggregation:
+      type: object
+      properties:
+        referenceId:
+          type: string
+        dacSource:
+          type: string
+        date:
+          type: string
+          format: date-time
+        bic:
+          type: string
+        iban:
+          type: string
+        accountBalance:
+          type: number
+          format: double
+        dispoLimit:
+          type: number
+          format: double
+        accountHolderName:
+          type: string
+        jointAccount:
+          type: boolean
+        transactions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Cfts.TransactionDetails"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Cfts.Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        amount:
+          type: number
+          format: double
+        bookingDate:
+          type: string
+          format: date-time
+        valutaDate:
+          type: string
+          format: date-time
+        counterBic:
+          type: string
+        counterIban:
+          type: string
+        counterName:
+          type: string
+        creditorId:
+          type: string
+        debitorId:
+          type: string
+        postingKey:
+          type: string
+        postingText:
+          type: string
+        purpose:
+          type: string
+        sepaPurposeCode:
+          type: string
+        sepaTransactionCode:
+          type: string
+        sepaEref:
+          type: string
+        sepaKref:
+          type: string
+        sepaMref:
+          type: string
+        saldo:
+          type: number
+          format: double
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Cfts.TransactionDetails:
+      type: object
+      properties:
+        transaction:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Cfts.Transaction"
+        label:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.Account:
+      type: object
+      properties:
+        type:
+          type: string
+        holder:
+          type: string
+        description:
+          type: string
+        iban:
+          type: string
+        bic:
+          type: string
+        bank_name:
+          type: string
+        country_id:
+          type: string
+        joint_account:
+          type: boolean
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.Balance:
+      type: object
+      properties:
+        balance:
+          type: number
+          format: double
+        limit:
+          type: number
+          format: double
+        available:
+          type: number
+          format: double
+        currency:
+          type: string
+        date:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.FinTecSystemsAggregation:
+      type: object
+      properties:
+        account:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.Account"
+        balance:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.Balance"
+        turnovers:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.Turnovers"
+        days:
+          type: integer
+          format: int32
+        date:
+          type: string
+        filters:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.Turnovers:
+      type: object
+      properties:
+        booking_date:
+          type: string
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        purpose:
+          type: array
+          items:
+            type: string
+        counter_iban:
+          type: string
+        counter_bic:
+          type: string
+        counter_holder:
+          type: string
+        prebooked:
+          type: boolean
+        creditor_id:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        category_id:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinancialAggregation:
+      type: object
+      properties:
+        finTecSystems:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.FinTecSystems.FinTecSystemsAggregation"
+        unnaxV3:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.UnnaxV3Aggregation"
+        cfts:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Cfts.CftsAggregation"
+        tink:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.TinkAggregation"
+      additionalProperties: false
+      description: Partner-specific open banking data (optional).
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Account:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        balances:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Balances"
+        identifiers:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Identifiers"
+        dates:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Dates"
+        financialInstitutionId:
+          type: string
+        customerSegment:
+          type: string
+        accountNumber:
+          type: string
+        currencyCode:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Amount:
+      type: object
+      properties:
+        value:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Value"
+        currencyCode:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Available:
+      type: object
+      properties:
+        amount:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Amount"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Balances:
+      type: object
+      properties:
+        booked:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Booked"
+        available:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Available"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Booked:
+      type: object
+      properties:
+        amount:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Amount"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Categories:
+      type: object
+      properties:
+        pfm:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Pfm"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Dates:
+      type: object
+      properties:
+        booked:
+          type: string
+          format: date-time
+        lastRefreshed:
+          type: string
+          format: date-time
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Descriptions:
+      type: object
+      properties:
+        original:
+          type: string
+        display:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.FinancialInstitution:
+      type: object
+      properties:
+        accountNumber:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Identifiers:
+      type: object
+      properties:
+        iban:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.InternationalBankAccountNumber"
+        financialInstitution:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.FinancialInstitution"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Identity:
+      type: object
+      properties:
+        name:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date-time
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.InternationalBankAccountNumber:
+      type: object
+      properties:
+        iban:
+          type: string
+        bban:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Pfm:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.TinkAggregation:
+      type: object
+      properties:
+        updated:
+          type: string
+          format: date-time
+        financialInstitutionName:
+          type: string
+        identity:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Identity"
+        accounts:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Account"
+        transactions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Transaction"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        amount:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Amount"
+        descriptions:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Descriptions"
+        dates:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Dates"
+        types:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Types"
+        categories:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Categories"
+        status:
+          type: string
+        providerMutability:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Types:
+      type: object
+      properties:
+        type:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Tink.Value:
+      type: object
+      properties:
+        unscaledValue:
+          type: string
+        scale:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Account:
+      type: object
+      properties:
+        customers:
+          type: array
+          items:
+            type: string
+        currency:
+          type: string
+        last_update:
+          type: string
+        bank_id:
+          type: integer
+          format: int32
+        balance:
+          type: integer
+          format: int32
+        _id:
+          type: string
+        name:
+          type: string
+        creation_date:
+          type: string
+        bank_name:
+          type: string
+        bank_group_id:
+          type: integer
+          format: int32
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.AccountOwnership:
+      type: object
+      properties:
+        id:
+          type: string
+        participation:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        title:
+          type: string
+        hierarchy:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Hierarchy"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Customer:
+      type: object
+      properties:
+        _id:
+          type: string
+        document:
+          type: string
+        address:
+          type: array
+          items:
+            type: string
+        birth_date:
+          type: string
+        names:
+          type: string
+        phones:
+          type: array
+          items:
+            type: string
+        emails:
+          type: array
+          items:
+            type: string
+        accounts_obj:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.AccountOwnership"
+        products_obj:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.ProductOwnership"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.DirectDebit:
+      type: object
+      properties:
+        creditor_id:
+          type: string
+        creditor_name:
+          type: string
+        invoice_id:
+          type: string
+        mandate_id:
+          type: string
+        description:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Hierarchy:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        title:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.ProductOwnership:
+      type: object
+      properties:
+        id:
+          type: string
+        participation:
+          type: string
+        type:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Statement:
+      type: object
+      properties:
+        _id:
+          type: integer
+          format: int32
+        account:
+          type: string
+        amount:
+          type: integer
+          format: int32
+        balance:
+          type: integer
+          format: int32
+        bank_reference:
+          type: string
+        beneficiary:
+          type: string
+        category:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Category"
+        concepts:
+          type: array
+          items:
+            type: string
+        currency:
+          type: string
+        deposit_date:
+          type: string
+        value_date:
+          type: string
+        import_date:
+          type: string
+        bank_id:
+          type: integer
+          format: int32
+        bank_name:
+          type: string
+        bank_group_id:
+          type: integer
+          format: int32
+        office:
+          type: string
+        direct_debit:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.DirectDebit"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.UnnaxV3Aggregation:
+      type: object
+      properties:
+        request_code:
+          type: string
+        accounts:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Account"
+        statements:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Statement"
+        customers:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReader.Unnax.Customer"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccount:
+      type: object
+      properties:
+        label:
+          type: string
+          description: The account label.
+        iban:
+          type: string
+          description: The International Bank Account Number.
+        balance:
+          type: number
+          description: The balance at the synchronization time.
+          format: double
+        balanceDate:
+          type: string
+          description: The balance date.
+          format: date-time
+        bankName:
+          type: string
+          description: The bank name.
+        customers:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccountCustomer"
+          description: A collection of Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccountCustomer.
+        transactions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccountTransaction"
+          description: A collection of Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccountTransaction.
+        number:
+          type: string
+          description: The account number.
+        type:
+          type: string
+          description: The bank account type (CHECKINGS, SAVINGS, LOAN, OTHER).
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccountCustomer:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: The customer identifier.
+        firstName:
+          type: string
+          description: The first name.
+        lastName:
+          type: string
+          description: The last name.
+        fullName:
+          type: string
+          description: The full name (first name and last name, possibly with civility).
+        address:
+          type: string
+          description: The address.
+        phoneNumbers:
+          type: array
+          items:
+            type: string
+          description: The phone numbers.
+        emails:
+          type: array
+          items:
+            type: string
+          description: The e-mail addresses.
+        participation:
+          type: string
+          description: The customer participation.
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccountTransaction:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: The transaction identifier.
+        amount:
+          type: number
+          description: The transaction amount.
+          format: double
+        currency:
+          type: string
+          description: The transaction currency.
+        label:
+          type: string
+          description: The transaction label.
+        categories:
+          type: array
+          items:
+            type: string
+          description: The categories the transaction belongs to.
+        dateTime:
+          type: string
+          description: The transaction date and time.
+          format: date-time
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.FinancialInformation:
+      type: object
+      properties:
+        providerName:
+          type: string
+          description: The name of the entity which provided the financial information.
+        aggregationDate:
+          type: string
+          description: The date at which the aggregation was retrieved.
+        bankAccounts:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BankReaderLegacy.BankAccount"
+          description: The list of bank accounts. There should be at least one.
+      additionalProperties: false
+      description: The transaction details retrieved from the applicant's bank account(s)
+        (optional).
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.BorrowerInformation:
+      type: object
+      properties:
+        employmentSituation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.EmploymentSituation"
+        personalInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.PersonalInformation"
+      additionalProperties: false
+      description: The applicant's information.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.CallbackInformation:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The request authentication token that will be sent back in
+            the "Token" field of the HTTP header of the callback request.
+        url:
+          type: string
+          description: The URL that will be called back once the credit application
+            has been evaluated.
+      additionalProperties: false
+      description: The configuration for the partner callback performed once the credit
+        application evaluation (with bank reader analysis) is done.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.CommunicationConfiguration:
+      type: object
+      properties:
+        communicationType:
+          type: string
+          description: The type of communication. Only "CALLBACK" is supported.
+        callbackInformation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.CallbackInformation"
+      additionalProperties: false
+      description: The communication configuration for financial transaction analysis
+        (optional, for French providers only).
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.DigitalSignatureConfiguration:
+      type: object
+      properties:
+        successCallbackUrl:
+          type: string
+          description: The URL the borrower will be redirected to after a successful
+            digital signature.
+        failureCallbackUrl:
+          type: string
+          description: The URL the borrower will be redirected to after a failed digital
+            signature.
+      additionalProperties: false
+      description: The configuration of the digital signature process (for German
+        providers only).
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.TechnicalConfiguration:
+      type: object
+      properties:
+        digitalSignatureConfiguration:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.DigitalSignatureConfiguration"
+        flexibleCreditMaturity:
+          type: boolean
+          description: Allows LeadIn to return a different maturity than requested
+            in order to maximize pre-acceptance (defaults to true).
+      additionalProperties: false
+      description: The technical configuration of the request (optional).
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.Configuration.TestingConfiguration:
+      type: object
+      properties:
+        openBankingScenario:
+          type: string
+        randomizePersonalInformation:
+          type: boolean
+        emailPrefix:
+          type: string
+        validateOriginalRequestPayload:
+          type: boolean
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.ContactInformation:
+      type: object
+      properties:
+        email:
+          type: string
+          description: The e-mail address.
+        streetNumber:
+          type: string
+          description: The street number of the address. In the address "742 EverGreen
+            Terrace", the street number is "742".
+        streetName:
+          type: string
+          description: The street name of the address. In the address "742 EverGreen
+            Terrace", the street name is "EverGreen Terrace".
+        addressSupplement:
+          type: string
+          description: The address supplement.
+        streetTypeCode:
+          type: string
+          description: 'A street type code listed in endpoint: /api/resources/street-types'
+        postalCode:
+          type: string
+          description: The postal code.
+        city:
+          type: string
+          description: The name of the city.
+        countryCode:
+          type: string
+          description: "A 2-letter country code listed in endpoint: /api/resources/countries<br
+            />\r\nFormat \"ISO 3166-1 alpha-2\": https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2"
+        cellPhoneNumber:
+          type: string
+          description: "The cell phone number.<br />\r\nIt can be sent either in national
+            format or international format (\"+\" followed by the international country
+            prefix)."
+        phoneNumber:
+          type: string
+          description: "The phone number.<br />\r\nIt can be sent either in national
+            format or international format (\"+\" followed by the international country
+            prefix)."
+        italianProvinceCode:
+          type: string
+          description: 'An Italian province code listed in endpoint: /api/resources/italian-provinces'
+        italianCommuneCode:
+          type: string
+          description: 'An Italian commune code listed in endpoint: /api/resources/italian-communes'
+      additionalProperties: false
+      description: The applicant's contact information.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.EmploymentSituation:
+      type: object
+      properties:
+        professionalSituationCode:
+          type: string
+          description: 'A professional situation code listed in endpoint: /api/resources/professional-situations'
+        sectorCode:
+          type: string
+          description: 'A sector code listed in endpoint: /api/resources/sectors'
+        professionCode:
+          type: string
+          description: 'A profession code listed in endpoint: /api/resources/professions'
+        professionalSituationStartDate:
+          type: string
+          description: The professional situation start date.
+        professionalSituationEndDate:
+          type: string
+          description: The professional situation end date.
+        isCompanyGoingIntoLiquidation:
+          type: boolean
+          description: Indicates whether the client's own company is in the process
+            of going into liquidation.
+        employerName:
+          type: string
+          description: The name of the employer.
+        hasTooMuchSickLeave:
+          type: boolean
+          description: Indicates whether the applicant had more than 30 days of sick
+            leave over the last 3 months.
+        companyTypeCode:
+          type: string
+          description: 'A company type code listed in endpoint: /api/resources/company-types'
+      additionalProperties: false
+      description: The applicant's employment situation.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.HousingSituation:
+      type: object
+      properties:
+        housingStatusCode:
+          type: string
+          description: 'A housing status code listed in endpoint: /api/resources/housing-status'
+        housingStatusStartDate:
+          type: string
+          description: "The housing status start date.<br />\r\nNot required for HOMELESS
+            housing status code, required for other codes."
+      additionalProperties: false
+      description: The applicant's housing situation.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.IncomeAndExpenses:
+      type: object
+      properties:
+        netMonthlyIncome:
+          type: number
+          description: The main borrower's net monthly income.
+          format: double
+        numberOfSalariesPerYear:
+          type: integer
+          description: The main borrower's number of salaries per year (from 12 to
+            15, when a value is expected).
+          format: int32
+        partnerNetMonthlyIncome:
+          type: number
+          description: The partner's net monthly income.
+          format: double
+        otherNetMonthlyIncome:
+          type: number
+          description: Other net monthly income.
+          format: double
+        rentAmount:
+          type: number
+          description: The rent amount.
+          format: double
+        mortgageAmount:
+          type: number
+          description: The monthly mortgage amount.
+          format: double
+        familyAllowanceIncome:
+          type: number
+          description: The family allowance income.
+          format: double
+        housingAssistanceIncome:
+          type: number
+          description: The housing assistance income.
+          format: double
+        pensionAllowanceIncome:
+          type: number
+          description: The pension allowance income.
+          format: double
+        socialSecurityAllowanceIncome:
+          type: number
+          description: The social security allowance income.
+          format: double
+        childCareExpensesAmount:
+          type: number
+          description: The child care expenses amount.
+          format: double
+        childSupportPaymentsAmount:
+          type: number
+          description: The child support payments amount.
+          format: double
+        hasLatePayments:
+          type: boolean
+          description: Indicates whether the applicant has late payments for ongoing
+            credits.
+        ongoingCredits:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.OngoingCreditInformation"
+          description: The list of ongoing credits.
+      additionalProperties: false
+      description: The applicant's income and expenses.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.MaritalSituation:
+      type: object
+      properties:
+        maritalStatusCode:
+          type: string
+          description: 'A marital status code listed in endpoint: /api/resources/marital-status'
+        numberOfChildren:
+          type: integer
+          description: The number of children.
+          format: int32
+        wasMarriedToSpouse:
+          type: boolean
+          description: This property indicates whether the applicant was married to
+            their spouse or not, if applicable.
+        hasDivorceBeenJudged:
+          type: boolean
+          description: This property indicates whether the divorce has been judged
+            or not, if applicable.
+      additionalProperties: false
+      description: The applicant's marital situation.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.OngoingCreditInformation:
+      type: object
+      properties:
+        monthlyInstallmentAmount:
+          type: number
+          description: The monthly installment amount for this credit.
+          format: double
+        ongoingCreditTypeCode:
+          type: string
+          description: 'An ongoing credit type code listed in endpoint: /api/resources/ongoing-credit-types'
+        toBeConsolidated:
+          type: boolean
+          description: "For French DEBTS projects only. Determines whether this credit
+            should be included in the consolidation offer. \r\nPass true if the applicant
+            wants Younited to consolidate this credit.\r\nPass false if the applicant
+            does not want Younited to consolidate this credit.\r\nCredits without
+            consolidation intent must still be provided for eligibility purposes."
+        creditInstitutionCode:
+          type: string
+          description: 'A credit institution code listed in endpoint: /api/resources/credit-institutions'
+        outstandingCapitalAmount:
+          type: number
+          description: Remaining amount to be reimbursed
+          format: double
+        interestRate:
+          type: number
+          description: Credit line interest rate
+          format: double
+        ongoingCreditEndDate:
+          type: string
+          description: The last scheduled payment date for this credit line.
+        externalReference:
+          type: string
+          description: Reference identifying this ongoing credit, in the `CreditInstitution`
+            referential.
+      additionalProperties: false
+      description: The other ongoing credits the applicant has to refund.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.OptinInformation:
+      type: object
+      properties:
+        acceptTermsAndConditions:
+          type: boolean
+          description: Specifies whether the applicant accepts Younited Credit's terms
+            and conditions. Must be true.
+        agreeToReceiveNewsFromYounitedCredit:
+          type: boolean
+          description: Specifies whether the applicant agrees to receive news from
+            Younited Credit.
+        agreeToReceivePromotionalMaterialFromPartners:
+          type: boolean
+          description: Specifies whether the applicant agrees to receive promotional
+            material from partners of Younited Credit.
+      additionalProperties: false
+      description: The applicant's consent information.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.PersonalInformation:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: The applicant's first name.
+        lastName:
+          type: string
+          description: The applicant's last name.
+        secondLastName:
+          type: string
+          description: The applicant's second last name.
+        maidenName:
+          type: string
+          description: The applicant's maiden name.
+        genderCode:
+          type: string
+          description: 'A gender code listed in endpoint: /api/resources/genders'
+        nationalityCode:
+          type: string
+          description: "A 2-letter country code listed in endpoint: /api/resources/countries<br
+            />\r\nFormat \"ISO 3166-1 alpha-2\": https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2"
+        dateOfBirth:
+          type: string
+          description: The date of birth of the applicant. The expected format is
+            YYYY-MM-DD.
+        cityOfBirth:
+          type: string
+          description: The applicant's city of birth.
+        frenchDepartmentOfBirthCode:
+          type: string
+          description: 'For French applications only. A department of birth code listed
+            in endpoint: /api/resources/xxx'
+        residenceCardExpirationDate:
+          type: string
+          description: Expected for applicants that are not from the European Union,
+            based on their NationalityCode. The expected format is YYYY-MM.
+        fiscalCode:
+          type: string
+          description: The applicant's fiscal code or tax identification number.
+        frenchCityOfBirthInseeCode:
+          type: string
+          description: For French applications only. The INSEE code for the commune
+            of birth, listed in endpoint /api/resources/french-communes
+        countryOfBirthCode:
+          type: string
+          description: For French applications only. A 2 letter country code corresponding
+            to the country of the birth.
+      additionalProperties: false
+      description: The applicant's personal information.
+    Yuc.LeadIn.Api.Dto.Integration.Request.SubTypes.ProjectInformation:
+      type: object
+      properties:
+        projectTypeCode:
+          type: string
+          description: 'A project type code listed in endpoint: /api/resources/project-types'
+        requestedAmount:
+          type: number
+          description: 'The requested amount listed in endpoint: /api/resources/borrowed-amounts'
+          format: double
+        currencyCode:
+          type: string
+          description: 'The currency code of the requested amount (e.g: EUR).'
+        creditMaturity:
+          type: integer
+          description: 'A credit maturity code listed in endpoint: /api/resources/credit-maturities'
+          format: int32
+        borrowerInsuranceCode:
+          type: string
+          description: "The insurance code of the main borrower listed in endpoint:
+            /api/resources/insurances<br />\r\nPass null for no insurance."
+        coBorrowerInsuranceCode:
+          type: string
+          description: "The insurance code of the co-borrower listed in endpoint:
+            /api/resources/insurances<br />\r\nPass null for no insurance."
+        requestedAdditionalLiquidity:
+          type: number
+          description: The requested additional liquidity for debt consolidation
+          format: double
+      additionalProperties: false
+      description: The credit application project's information.
+    Yuc.LeadIn.Api.Dto.Integration.Response.CreditApplicationResponse:
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: The unique identifier for the request
+          format: uuid
+        reference:
+          type: string
+          description: The unique identifier for the credit application
+        isPreAccepted:
+          type: boolean
+          description: True if the loan request has been pre-accepted, false if not,
+            and null if not enough information was provided to evaluate the application
+        funnelUrl:
+          type: string
+          description: The link to the pre-filled funnel
+        completionSpaceUrl:
+          type: string
+          description: The link to the completion user space
+        creditAgreementOfferUrl:
+          type: string
+          description: The link to the credit agreement url
+        digitalSignatureUrl:
+          type: string
+          description: The url for the digital signature process
+        estimatedFirstInstallmentDate:
+          type: string
+          description: Estimated date for first payment
+          format: date-time
+        estimatedLastInstallmentDate:
+          type: string
+          description: Estimated date for last payment
+          format: date-time
+        estimatedFundTransferDate:
+          type: string
+          description: Estimated fund transfer date
+          format: date-time
+        estimatedInstallmentInsuranceIncludedAfterFundTransfer:
+          type: number
+          description: Estimated final installment including the monthly insurance
+            amount that the client is going to pay
+          format: double
+        offer:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.OfferInformation"
+        alternativeOffers:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.OfferInformation"
+          description: Loan pricing details
+        financialAggregation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.FinancialAggregationResponse"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Response.FinancialAggregationResponse:
+      type: object
+      properties:
+        financialDataTransactionHashCode:
+          type: string
+          description: Processed financial aggregation's hash code
+        isBankReaderInconsistent:
+          type: boolean
+          description: Indicates if bank reader is inconsistent after its analysis
+            or not.
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Integration.Response.OfferInformation:
+      type: object
+      properties:
+        borrowedAmount:
+          type: number
+          description: The gross loan amount
+          format: double
+          readOnly: true
+        creditMaturity:
+          type: integer
+          description: The duration of the loan in months
+          format: int32
+          readOnly: true
+        creditTotalAmount:
+          type: number
+          description: The basic amount of the loan plus any additional financed closing
+            costs.
+          format: double
+          readOnly: true
+        creditTotalCost:
+          type: number
+          description: The total cost of the credit.
+          format: double
+          readOnly: true
+        nominalRate:
+          type: number
+          description: Nominal interest rate charged for borrowing
+          format: double
+          readOnly: true
+        annualPercentageRate:
+          type: number
+          description: Annual percentage rate charged for borrowing
+          format: double
+          readOnly: true
+        amountMadeAvailable:
+          type: number
+          description: Amount made available to the borrower
+          format: double
+          readOnly: true
+        applicationFeeAmount:
+          type: number
+          description: Application fee amount
+          format: double
+          readOnly: true
+        installmentWithInsurance:
+          type: number
+          description: The estimated installment including the monthly insurance amount
+            that the client is going to pay
+          format: double
+          readOnly: true
+        installmentWithoutInsurance:
+          type: number
+          description: The estimated installment without insurance that the client
+            is going to pay
+          format: double
+          readOnly: true
+        insuranceInstallment:
+          type: number
+          description: Monthly insurance amount of the offer chosen by the client
+          format: double
+          readOnly: true
+        insuranceTotalAmount:
+          type: number
+          description: Total insurance amount of the offer chosen by the client
+          format: double
+        borrowerInsuranceCodes:
+          type: array
+          items:
+            type: string
+          description: The code of the selected insurances for the main borrower
+          readOnly: true
+        coBorrowerInsuranceCodes:
+          type: array
+          items:
+            type: string
+          description: The code of the selected insurances for the co-borrower
+          readOnly: true
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Request.BusinessProviderRequest:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        requestType:
+          type: string
+        businessUnitCode:
+          type: string
+        businessProviderCode:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Request.CreditApplicationReferenceRequest:
+      type: object
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Response.DocumentInformation:
+      type: object
+      properties:
+        documentId:
+          type: integer
+          description: Document id
+          format: int32
+        documentTitle:
+          type: string
+          description: Document title
+        categoryCode:
+          type: string
+          description: Document category code
+        borrowerTypeCode:
+          type: string
+          description: Borrower type code
+        reviewStatusCode:
+          type: string
+          description: Document review status code
+        uploadedDocumentsCount:
+          type: integer
+          description: Number of received documents
+          format: int32
+        rejectionReasons:
+          type: array
+          items:
+            type: string
+          description: Rejection reasons if applicable
+      additionalProperties: false
+    Yuc.LeadIn.Api.Dto.Response.StatusInformation:
+      type: object
+      properties:
+        grantingStatusCode:
+          type: string
+        decisionDate:
+          type: string
+          format: date-time
+        counterOfferReference:
+          type: string
+        isSigned:
+          type: boolean
+        creditAgreementSignatureDate:
+          type: string
+        documentInformation:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Response.DocumentInformation"
+        requestId:
+          type: string
+          description: The unique identifier for the request
+          format: uuid
+        reference:
+          type: string
+          description: The unique identifier for the credit application
+        isPreAccepted:
+          type: boolean
+          description: True if the loan request has been pre-accepted, false if not,
+            and null if not enough information was provided to evaluate the application
+        funnelUrl:
+          type: string
+          description: The link to the pre-filled funnel
+        completionSpaceUrl:
+          type: string
+          description: The link to the completion user space
+        creditAgreementOfferUrl:
+          type: string
+          description: The link to the credit agreement url
+        digitalSignatureUrl:
+          type: string
+          description: The url for the digital signature process
+        estimatedFirstInstallmentDate:
+          type: string
+          description: Estimated date for first payment
+          format: date-time
+        estimatedLastInstallmentDate:
+          type: string
+          description: Estimated date for last payment
+          format: date-time
+        estimatedFundTransferDate:
+          type: string
+          description: Estimated fund transfer date
+          format: date-time
+        estimatedInstallmentInsuranceIncludedAfterFundTransfer:
+          type: number
+          description: Estimated final installment including the monthly insurance
+            amount that the client is going to pay
+          format: double
+        offer:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.OfferInformation"
+        alternativeOffers:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.OfferInformation"
+          description: Loan pricing details
+        financialAggregation:
+          "$ref": "#/components/schemas/Yuc.LeadIn.Api.Dto.Integration.Response.FinancialAggregationResponse"
+      additionalProperties: false
+    Yuc.LeadIn.Api.Models.Authentication.AcquireTokenResponse:
+      type: object
+      properties:
+        token_type:
+          type: string
+        expires_in:
+          type: string
+        expires_on:
+          type: string
+        not_before:
+          type: string
+        access_token:
+          type: string
+        error:
+          type: string
+        error_codes:
+          type: array
+          items:
+            type: integer
+            format: int32
+      additionalProperties: false
+    Yuc.LeadIn.Core.Models.ResourceDocumentation:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Core.Models.ResourceListDocumentation:
+      type: object
+      properties:
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceDocumentation"
+      additionalProperties: false
+    Yuc.LeadIn.Core.Models.ResourceProfession:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+      additionalProperties: false
+    Yuc.LeadIn.Core.Models.ResourceProfessionalSituation:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        sectors:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceSector"
+        professions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceProfession"
+      additionalProperties: false
+    Yuc.LeadIn.Core.Models.ResourceProfessionalSituations:
+      type: object
+      properties:
+        description:
+          type: string
+        professionalSituations:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceProfessionalSituation"
+      additionalProperties: false
+    Yuc.LeadIn.Core.Models.ResourceSector:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        professions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Yuc.LeadIn.Core.Models.ResourceProfession"
+      additionalProperties: false
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: "Please enter a token preceded by the <code>Bearer</code> keyword.\r\n\r\nExample:
+        <strong><code>Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></strong>\r\n\r\nThe
+        value entered in the text box will be added as an HTTP header named \"Authorization\"
+        to all the requests sent from this page.\r\n\r\nTo acquire a token, you need
+        to send an HTTP request to the endpoint <a href=\"#tag/OAuth/paths/~1oauth2~1token/post\">/oauth2/token</a>.
+        The type of the body should be <code>x-www-form-urlencoded</code>, and it
+        should contain the following parameters:\r\n\r\n<ul>\r\n\t<li><code>client_id</code>:
+        the client id identifying your application, that was given to you by Younited
+        Credit.</li>\r\n\t<li><code>client_secret</code>: the client secret corresponding
+        to your client id, also provided to you by Younited Credit</li>\r\n</ul>\r\n\r\n<p>The
+        returned token will be valid for one hour. After that, you will have to acquire
+        a new one.</p>\r\n"
+      name: Authorization
+      in: header
+security:
+- Bearer: []
